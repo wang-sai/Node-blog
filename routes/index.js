@@ -13,4 +13,9 @@ module.exports = (app) => {
       res.status(404).render('404')
     }
   })
+  app.use((err, req, res, next) => {
+    console.error(err)
+    req.flash('error', err.message)
+    res.redirect('/posts')
+  })
 }
