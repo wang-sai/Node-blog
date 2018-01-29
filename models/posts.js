@@ -1,5 +1,27 @@
 const marked = require('marked')
 const Post = require('../lib/mongo').Post
+const CommentModel = require('./comments')
+
+// 给 post 添加留言数 commentsCount
+Post.plugin('addCommentsCount', {
+  afterFind(posts) {
+    return Promise.all(posts.map((post) => {
+      return CommentModel.getCommentsCount(post._id).then((commentsCount) => {
+        post.commentsCount = commentsCount
+        return post
+      })
+    }))
+  },
+  afterFindOne(post) {
+    if (post) {
+      return CommentModel.getCommentsCount(post._id).then((count) => {
+        post.commentsCount = count
+        return post
+      })
+    }
+    return postId
+  }
+})
 
 // 将 post 的 content 从 markdown 转换成 html
 Post.plugin('contentToHtml', {
@@ -29,6 +51,7 @@ module.exports = {
       .findOne({ _id: postId })
       .populate({ path: 'author', model: 'User' })
       .addCreatedAt()
+      .addCommentsCount()
       .contentToHtml()
       .exec()
   },
@@ -44,6 +67,7 @@ module.exports = {
       .populate({ path: 'author', model: 'User' })
       .sort({ _id: -1 })
       .addCreatedAt()
+      .addCommentsCount()
       .contentToHtml()
       .exec()
   },
@@ -69,7 +93,14 @@ module.exports = {
   },
 
   // 通过文章 id 删除一篇文章
-  delPostById(postId) {
-    return Post.deleteOne({ _id: postId }).exec()
+  delPostById(postId, author) {
+    return Post.deleteOne({ author: author, _id: postId })
+      .exec()
+      .then((res) => {
+        // 文章删除后，再删除该文章下的所有留言
+        if (res.result.ok && res.result.n > 0) {
+          return CommentModel.delCommentsbyPostId(postId)
+        }
+      })
   }
 }
