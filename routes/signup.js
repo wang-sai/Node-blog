@@ -61,9 +61,6 @@ router.post('/', checkNotLogin, (req, res, next) => {
   // 用户信息写入数据库
   UserModel.create(user)
     .then((result) => {
-      console.log('=========')
-      console.log(result)
-      console.log('=========')
       // 此 user 是插入 mongodb 后的值，包含 _id
       user = result.ops[0]
       // 删除密码这种敏感信息，将用户信息存入 session

@@ -83,6 +83,13 @@ app.use(expressWinston.errorLogger({
 }))
 
 // 监听端口，启动程序
-app.listen(config.port, () => {
-  console.log(`${pkg.name} listening on port ${config.port}`)
-})
+if (module.parent) {
+  // 被 require，则导出 app
+  module.exports = app
+} else {
+  // 监听端口，启动程序
+  app.listen(config.port, () => {
+    console.log(`${pkg.name} listening on port ${config.port}`)
+  })
+}
+
